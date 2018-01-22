@@ -250,22 +250,22 @@ private:
 	// Robot drive system
 	string gameData;
 
-	Talon clawRL{0};
-	Talon clawML{1};
-	Talon clawRF{2};
-	Talon clawRR{3};
-	Talon clawRM{4};
-	Talon clawRF{5};
+	Talon clawRL{4};
+	Talon clawML{5};
+	Talon clawRF{6};
+	Talon clawRR{7};
+	Talon clawRM{8};
+	Talon clawRF{9};
 
 
 
-	Talon driveRL{6};
-	Talon driveFL{7};
+	Talon driveRL{1};
+	Talon driveFL{0};
 	SpeedControllerGroup LeftMotorSet{driveRL, driveFL};
 
 
-	Talon driveRR{8};
-	Talon driveFR{9};
+	Talon driveRR{3};
+	Talon driveFR{2};
 	SpeedControllerGroup RightMotorSet{driveRR, driveRL};
 
 	DifferentialDrive RobotDrive{LeftMotorSet, RightMotorSet};
