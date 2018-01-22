@@ -47,6 +47,7 @@ public:
 		m_chooser.AddObject(autoOnCenter, autoOnCenter);
 		m_chooser.AddObject(autoIdle, autoIdle);
 		SmartDashboard::PutData("Auto Modes", &m_chooser);
+
 	}
 
 	/*
@@ -87,23 +88,22 @@ public:
 
 			switch(gameData[0]) {
 
-			case "R" :
-				//In front of the center station and going to right side of switch.
+				case "R" :
+					//In front of the center station and going to right side of switch.
 				break;
 
-			case "L" :
-				//In front of the center station and going to left side of switch.
+				case "L" :
+					//In front of the center station and going to left side of switch.
 				break;
 
-			default :
-				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
-				while(gyro.GetAngle() != 45 || gyro.GetAngle() != -45) {
-					RobotDrive.TankDrive(-0.5,0.5);
+				default :
+					cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
+					while(gyro.GetAngle() != 45 || gyro.GetAngle() != -45) {
+						RobotDrive.TankDrive(-0.5,0.5);
 				}
-
 			}
-
-		} else if (autoSelected == autoOnRight) {
+		}
+		else if (autoSelected == autoOnRight) {
 			cout << "Running Right Auton..." << endl;
 
 			gyro.Reset();
@@ -113,37 +113,42 @@ public:
 
 			switch(gameData[0]) {
 
-			case "R" :
-				//In front of right station and going to right side of switch.
+				case "R" :
+					//In front of right station and going to right side of switch.
 
-				break;
+					break;
 
-			case "L" :
-				//In front of right station and...
+				case "L" :
+					//In front of right station and...
 				switch(Prioritize) {
-				case DoScale :
-					if(gameData[1] == "R") {
-						//...going to right side of scale.
-					}
-					else {
+
+					case DoScale :
+						if(gameData[1] == "R") {
+							//...going to right side of scale.
+						}
+
+						else {
+							//...crossing line only.
+						}
+					break;
+
+					case DoSwitch :
+						//...going to left side of switch.
+					break;
+
+					case CrossLineOnly :
 						//...crossing line only.
-					}
 					break;
-				case DoSwitch :
-					//...going to left side of switch.
-					break;
-				case CrossLineOnly :
-					//...crossing line only.
-					break;
-				default :
-					//...crossing line only.
+
+					default :
+						//...crossing line only.
 					break;
 				}
 				break;
 
-			default :
-				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
-				RobotDrive.TankDrive(0.5,0.5);
+				default :
+					cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
+					RobotDrive.TankDrive(0.5,0.5);
 			}
 		} else if (autoSelected == autoOnLeft) {
 			cout << "Running Left Auton..." << endl;
@@ -154,45 +159,67 @@ public:
 			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
 
 			switch(gameData[0]) {
+				case "R" :
+					//In front of left station and...
+					switch(Prioritize) {
+						case DoScale :
 
-			case "R" :
-				//In front of left station and...
-				switch(Prioritize) {
-				case DoScale :
-					if(gameData[1] == "L") {
-						//...going to left side of scale.
+							if(gameData[1] == "L") {
+								//...going to left side of scale.
+							}
+							else {
+								//...crossing line only.
+							}
+						break;
+
+						case DoSwitch :
+							//...going to right side of switch.
+						break;
+
+						case CrossLineOnly :
+							//...crossing line only.
+						break;
+
+						default :
+							//...crossing line only.
+						break;
 					}
-					else {
-						//...crossing line only.
-					}
 					break;
-				case DoSwitch :
-					//...going to right side of switch.
+
+
+				case "L" :
+					//In front of left station and...
+					switch(Prioritize) {
+
+						case DoScale :
+							if(gameData[1] == "L") {
+							//...going to left side of scale.
+							}
+							else {
+							//...crossing line only.
+							}
+						break;
+
+						case DoSwitch :
+							//...going to left side of switch.
+						break;
+
+						case CrossLineOnly :
+						break;
+
+						default :
+						}
 					break;
-				case CrossLineOnly :
-					//...crossing line only.
-					break;
+
 				default :
-					//...crossing line only.
-					break;
+					cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
+					RobotDrive.TankDrive(0.5,0.5);
 				}
-				//going to right side of switch.
-				break;
+			} else if (autoSelected == autoIdle) {
+				cout << "Doing Nothing in Auton..." << endl;
 
-
-			case "L" :
-				//In front of right station and going to left side of switch.
-				break;
-
-			default :
-				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
-				RobotDrive.TankDrive(0.5,0.5);
-			}
-		} else if (autoSelected == autoIdle) {
-			cout << "Doing Nothing in Auton..." << endl;
-
-			gyro.Reset();
-			gyro.Calibrate();
+				gyro.Reset();
+				gyro.Calibrate();
 
 		}
 	}
@@ -206,8 +233,8 @@ public:
 			// Drive with arcade style (use right stick)
 			LeftMotorSet.SetInverted(true);
 
-			RobotDrive.ArcadeDrive(
-					stickDrive.GetY(), stickDrive.GetX());
+			RobotDrive.TankDrive(
+					stickDriveL.GetY(), stickDriveR.GetY());
 
 			// The motors will be updated every 5ms
 			Wait(0.005);
@@ -245,8 +272,9 @@ private:
 
 
 
-	Joystick stickDrive{0};
-	Joystick stickAux{1};
+	Joystick stickDriveL{0};
+	Joystick stickDriveR{1};
+	Joystick stickAux{2};
 
 	ADXRS450_Gyro gyro{0};
 
@@ -254,6 +282,10 @@ private:
 	const string DoScale = "Scale";
 	const string DoSwitch = "Switch";
 	const string CrossLineOnly = "Cross Line Only";
+
+	SendableChooser<string> Cube;
+	const string GetCube = "Get a Power Cube";
+	const string LeaveCube = "Do not get a Power Cube";
 
 	SendableChooser<string> m_chooser;
 	const string autoIdle = "DoNothing";
