@@ -8,13 +8,18 @@
 #include <iostream>
 #include <string>
 
+#include <WPILib.h>
 #include <Drive/DifferentialDrive.h>
 #include <Joystick.h>
 #include <SampleRobot.h>
 #include <SmartDashboard/SendableChooser.h>
 #include <SmartDashboard/SmartDashboard.h>
 #include <Spark.h>
+#include <Talon.h>
 #include <Timer.h>
+#include <ADXRS450_Gyro.h>
+using namespace std;
+using namespace frc;
 
 /**
  * This is a demo program showing the use of the DifferentialDrive class.
@@ -28,18 +33,20 @@
  * be much more difficult under this system. Use IterativeRobot or Command-Based
  * instead if you're new.
  */
-class Robot : public frc::SampleRobot {
+class Robot : public SampleRobot {
 public:
 	Robot() {
 		// Note SmartDashboard is not initialized here, wait until
 		// RobotInit to make SmartDashboard calls
-		m_robotDrive.SetExpiration(0.1);
+		RobotDrive.SetExpiration(0.1);
 	}
 
 	void RobotInit() {
-		m_chooser.AddDefault(kAutoNameDefault, kAutoNameDefault);
-		m_chooser.AddObject(kAutoNameCustom, kAutoNameCustom);
-		frc::SmartDashboard::PutData("Auto Modes", &m_chooser);
+		m_chooser.AddDefault(autoOnLeft, autoOnLeft);
+		m_chooser.AddObject(autoOnRight, autoOnRight);
+		m_chooser.AddObject(autoOnCenter, autoOnCenter);
+		m_chooser.AddObject(autoIdle, autoIdle);
+		SmartDashboard::PutData("Auto Modes", &m_chooser);
 	}
 
 	/*
@@ -56,36 +63,137 @@ public:
 	 * well.
 	 */
 	void Autonomous() {
-		std::string autoSelected = m_chooser.GetSelected();
-		// std::string autoSelected = frc::SmartDashboard::GetString(
+
+		string prioritizeSelected = Prioritize.GetSelected();
+		cout << "Prioritize: " << prioritizeSelected << endl;
+
+		string autoSelected = m_chooser.GetSelected();
+		// string autoSelected = SmartDashboard::GetString(
 		// "Auto Selector", kAutoNameDefault);
-		std::cout << "Auto selected: " << autoSelected << std::endl;
+		cout << "Auto selected: " << autoSelected << endl;
 
 		// MotorSafety improves safety when motors are updated in loops
 		// but is disabled here because motor updates are not looped in
 		// this autonomous mode.
-		m_robotDrive.SetSafetyEnabled(false);
+		RobotDrive.SetSafetyEnabled(false);
 
-		if (autoSelected == kAutoNameCustom) {
+		if (autoSelected == autoOnCenter) {
 			// Custom Auto goes here
-			std::cout << "Running custom Autonomous" << std::endl;
+			cout << "Running Center Auton..." << endl;
 
-			// Spin at half speed for two seconds
-			m_robotDrive.ArcadeDrive(0.0, 0.5);
-			frc::Wait(2.0);
+			LeftMotorSet.SetInverted(true);
 
-			// Stop robot
-			m_robotDrive.ArcadeDrive(0.0, 0.0);
-		} else {
-			// Default Auto goes here
-			std::cout << "Running default Autonomous" << std::endl;
+			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
 
-			// Drive forwards at half speed for two seconds
-			m_robotDrive.ArcadeDrive(-0.5, 0.0);
-			frc::Wait(2.0);
+			switch(gameData[0]) {
 
-			// Stop robot
-			m_robotDrive.ArcadeDrive(0.0, 0.0);
+			case "R" :
+				//In front of the center station and going to right side of switch.
+				break;
+
+			case "L" :
+				//In front of the center station and going to left side of switch.
+				break;
+
+			default :
+				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
+				while(gyro.GetAngle() != 45 || gyro.GetAngle() != -45) {
+					RobotDrive.TankDrive(-0.5,0.5);
+				}
+
+			}
+
+		} else if (autoSelected == autoOnRight) {
+			cout << "Running Right Auton..." << endl;
+
+			gyro.Reset();
+			gyro.Calibrate();
+
+			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
+
+			switch(gameData[0]) {
+
+			case "R" :
+				//In front of right station and going to right side of switch.
+
+				break;
+
+			case "L" :
+				//In front of right station and...
+				switch(Prioritize) {
+				case DoScale :
+					if(gameData[1] == "R") {
+						//...going to right side of scale.
+					}
+					else {
+						//...crossing line only.
+					}
+					break;
+				case DoSwitch :
+					//...going to left side of switch.
+					break;
+				case CrossLineOnly :
+					//...crossing line only.
+					break;
+				default :
+					//...crossing line only.
+					break;
+				}
+				break;
+
+			default :
+				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
+				RobotDrive.TankDrive(0.5,0.5);
+			}
+		} else if (autoSelected == autoOnLeft) {
+			cout << "Running Left Auton..." << endl;
+
+			gyro.Reset();
+			gyro.Calibrate();
+
+			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
+
+			switch(gameData[0]) {
+
+			case "R" :
+				//In front of left station and...
+				switch(Prioritize) {
+				case DoScale :
+					if(gameData[1] == "L") {
+						//...going to left side of scale.
+					}
+					else {
+						//...crossing line only.
+					}
+					break;
+				case DoSwitch :
+					//...going to right side of switch.
+					break;
+				case CrossLineOnly :
+					//...crossing line only.
+					break;
+				default :
+					//...crossing line only.
+					break;
+				}
+				//going to right side of switch.
+				break;
+
+
+			case "L" :
+				//In front of right station and going to left side of switch.
+				break;
+
+			default :
+				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
+				RobotDrive.TankDrive(0.5,0.5);
+			}
+		} else if (autoSelected == autoIdle) {
+			cout << "Doing Nothing in Auton..." << endl;
+
+			gyro.Reset();
+			gyro.Calibrate();
+
 		}
 	}
 
@@ -93,14 +201,16 @@ public:
 	 * Runs the motors with arcade steering.
 	 */
 	void OperatorControl() override {
-		m_robotDrive.SetSafetyEnabled(true);
+		RobotDrive.SetSafetyEnabled(true);
 		while (IsOperatorControl() && IsEnabled()) {
 			// Drive with arcade style (use right stick)
-			m_robotDrive.ArcadeDrive(
-					-m_stick.GetY(), m_stick.GetX());
+			LeftMotorSet.SetInverted(true);
+
+			RobotDrive.ArcadeDrive(
+					stickDrive.GetY(), stickDrive.GetX());
 
 			// The motors will be updated every 5ms
-			frc::Wait(0.005);
+			Wait(0.005);
 		}
 	}
 
@@ -111,15 +221,47 @@ public:
 
 private:
 	// Robot drive system
-	frc::Spark m_leftMotor{0};
-	frc::Spark m_rightMotor{1};
-	frc::DifferentialDrive m_robotDrive{m_leftMotor, m_rightMotor};
+	string gameData;
 
-	frc::Joystick m_stick{0};
+	Talon clawRL{0};
+	Talon clawML{1};
+	Talon clawRF{2};
+	Talon clawRR{3};
+	Talon clawRM{4};
+	Talon clawRF{5};
 
-	frc::SendableChooser<std::string> m_chooser;
-	const std::string kAutoNameDefault = "Default";
-	const std::string kAutoNameCustom = "My Auto";
+
+
+	Talon driveRL{6};
+	Talon driveFL{7};
+	SpeedControllerGroup LeftMotorSet{driveRL, driveFL};
+
+
+	Talon driveRR{8};
+	Talon driveFR{9};
+	SpeedControllerGroup RightMotorSet{driveRR, driveRL};
+
+	DifferentialDrive RobotDrive{LeftMotorSet, RightMotorSet};
+
+
+
+	Joystick stickDrive{0};
+	Joystick stickAux{1};
+
+	ADXRS450_Gyro gyro{0};
+
+	SendableChooser<string> Prioritize;
+	const string DoScale = "Scale";
+	const string DoSwitch = "Switch";
+	const string CrossLineOnly = "Cross Line Only";
+
+	SendableChooser<string> m_chooser;
+	const string autoIdle = "DoNothing";
+	const string autoOnLeft = "StartInLeft";
+	const string autoOnRight = "StartInRight";
+	const string autoOnCenter = "StartInCenter";
+
+
 };
 
 START_ROBOT_CLASS(Robot)
