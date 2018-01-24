@@ -111,45 +111,51 @@ public:
 
 			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
 
-			switch(gameData[0]) {
+			switch(Prioritize) {
 
-				case "R" :
-					//In front of right station and going to right side of switch.
-
-					break;
-
+			case DoScale :
+				switch(gameData[1]) {
 				case "L" :
-					//In front of right station and...
-				switch(Prioritize) {
-
-					case DoScale :
-						if(gameData[1] == "R") {
-							//...going to right side of scale.
-						}
-
-						else {
-							//...crossing line only.
-						}
-					break;
-
-					case DoSwitch :
-						//...going to left side of switch.
-					break;
-
-					case CrossLineOnly :
-						//...crossing line only.
-					break;
-
+					switch(gameData[0]) {
+					case "R" :
+						//Do switch
+						break;
 					default :
-						//...crossing line only.
+						//Cross line
+						break;
+					}
+					break;
+				case "R" :
+					//Do scale
 					break;
 				}
 				break;
 
-				default :
-					cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
-					RobotDrive.TankDrive(0.5,0.5);
+			case DoSwitch :
+				switch(gameData[0]) {
+				case "L" :
+					switch(gameData[1]) {
+					case "R" :
+						//Do scale
+						break;
+					default :
+						//Cross line
+						break;
+					}
+					break;
+
+				case "R" :
+					//Do switch
+					break;
+
+				}
+				break;
+
+			case CrossLineOnly :
+				//Crossing line.
+				break;
 			}
+
 		} else if (autoSelected == autoOnLeft) {
 			cout << "Running Left Auton..." << endl;
 
@@ -158,63 +164,41 @@ public:
 
 			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
 
-			switch(gameData[0]) {
+			switch(Prioritize){
+			case DoScale :
+				switch(gameData[1]){
+				case "L" :
+					//Do scale
+					break;
 				case "R" :
-					//In front of left station and...
-					switch(Prioritize) {
-						case DoScale :
-
-							if(gameData[1] == "L") {
-								//...going to left side of scale.
-							}
-							else {
-								//...crossing line only.
-							}
+					switch(gameData[0]){
+					case "L" :
+						//Do switch
 						break;
-
-						case DoSwitch :
-							//...going to right side of switch.
-						break;
-
-						case CrossLineOnly :
-							//...crossing line only.
-						break;
-
-						default :
-							//...crossing line only.
+					case "R" :
+						//Cross line
 						break;
 					}
 					break;
-
-
-				case "L" :
-					//In front of left station and...
-					switch(Prioritize) {
-
-						case DoScale :
-							if(gameData[1] == "L") {
-							//...going to left side of scale.
-							}
-							else {
-							//...crossing line only.
-							}
-						break;
-
-						case DoSwitch :
-							//...going to left side of switch.
-						break;
-
-						case CrossLineOnly :
-						break;
-
-						default :
-						}
-					break;
-
-				default :
-					cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
-					RobotDrive.TankDrive(0.5,0.5);
 				}
+				break;
+			case DoSwitch :
+				switch(gameData[0]){
+				case "L" :
+					//Do switch
+					break;
+				case "R" :
+
+					break;
+				}
+				break;
+			case CrossLineOnly :
+				break;
+			default :
+				cout << "No code given, crossing line..." << endl;
+				//Cross line
+			}
+
 			} else if (autoSelected == autoIdle) {
 				cout << "Doing Nothing in Auton..." << endl;
 
