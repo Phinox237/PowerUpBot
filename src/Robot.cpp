@@ -188,11 +188,22 @@ public:
 					//Do switch
 					break;
 				case "R" :
-
+				switch(gameData[1]){
+				case "L" :
+					//Do scale
+					break;
+				case "R" :
+					//Cross line
+					break;
+				}
+					break;
+				default :
+					//Cross line
 					break;
 				}
 				break;
 			case CrossLineOnly :
+				//Cross line
 				break;
 			default :
 				cout << "No code given, crossing line..." << endl;
