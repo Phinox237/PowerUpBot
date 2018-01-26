@@ -82,7 +82,7 @@ public:
 			// Custom Auto goes here
 			cout << "Running Center Auton..." << endl;
 
-			LeftMotorSet.SetInverted(true);
+			drive_setLeft.SetInverted(true);
 
 			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
 
@@ -226,10 +226,39 @@ public:
 		RobotDrive.SetSafetyEnabled(true);
 		while (IsOperatorControl() && IsEnabled()) {
 			// Drive with arcade style (use right stick)
-			LeftMotorSet.SetInverted(true);
+			drive_setLeft.SetInverted(true);
 
-			RobotDrive.TankDrive(
-					stickDriveL.GetY(), stickDriveR.GetY());
+			RobotDrive.TankDrive(stickDriveL.GetY(), stickDriveR.GetY());
+
+			clawY.Set(stickAux.GetY());
+
+			if (stickAux.GetRawButton(1)) {
+				drive_setLeft.Set(1);
+				drive_setRight.Set(-1);
+			} else {
+				drive_setLeft.Set(0);
+				drive_setRight.Set(0);
+			}
+
+			if (stickAux.GetRawButton(2)) {
+				drive_setLeft.Set(-1);
+				drive_setRight.Set(1);
+			} else {
+				drive_setLeft.Set(0);
+				drive_setRight.Set(0);
+			}
+
+			if (stickAux.GetRawButton(12)) {
+				mClimb.Set(1);
+			} else {
+				mClimb.Set(0);
+			}
+
+			if (stickAux.GetRawButton(11)) {
+				mClimb.Set(-1);
+			} else {
+				mClimb.Set(0);
+			}
 
 			// The motors will be updated every 5ms
 			Wait(0.005);
@@ -242,37 +271,37 @@ public:
 	void Test() override {}
 
 private:
-	// Robot drive system
+	//For switch/scale state
 	string gameData;
 
-	Talon clawRL{4};
-	Talon clawML{5};
-	Talon clawRF{6};
-	Talon clawRR{7};
-	Talon clawRM{8};
-	Talon clawRF{9};
+	//Left Drive
+	Spark driveFL{0};
+	Spark driveRL{1};
+	SpeedControllerGroup drive_setLeft{driveRL, driveFL};
 
+	//Right Drive
+	Spark driveFR{2};
+	Spark driveRR{3};
+	SpeedControllerGroup drive_setRight{driveRR, driveRL};
 
+	DifferentialDrive RobotDrive{drive_setLeft, drive_setRight};
 
-	Talon driveRL{1};
-	Talon driveFL{0};
-	SpeedControllerGroup LeftMotorSet{driveRL, driveFL};
+	//Claw motors
+	Talon clawL{4};
+	Talon clawR{5};
+	Talon clawY{6};
 
+	//Climing
+	Talon mClimb{7};
 
-	Talon driveRR{3};
-	Talon driveFR{2};
-	SpeedControllerGroup RightMotorSet{driveRR, driveRL};
-
-	DifferentialDrive RobotDrive{LeftMotorSet, RightMotorSet};
-
-
-
+	//Joysticks
 	Joystick stickDriveL{0};
 	Joystick stickDriveR{1};
 	Joystick stickAux{2};
 
 	ADXRS450_Gyro gyro{0};
 
+	//Auton stuff
 	SendableChooser<string> Prioritize;
 	const string DoScale = "Scale";
 	const string DoSwitch = "Switch";
