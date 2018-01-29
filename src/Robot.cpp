@@ -46,6 +46,10 @@ public:
 		m_chooser.AddObject(autoOnRight, autoOnRight);
 		m_chooser.AddObject(autoOnCenter, autoOnCenter);
 		m_chooser.AddObject(autoIdle, autoIdle);
+		Prioritize.AddDefault(DoSwitch, DoSwitch);
+		Prioritize.AddObject(DoScale, DoScale);
+		Prioritize.AddObject(CrossLineOnly, CrossLineOnly);
+
 		SmartDashboard::PutData("Auto Modes", &m_chooser);
 
 	}
@@ -78,30 +82,63 @@ public:
 		// this autonomous mode.
 		RobotDrive.SetSafetyEnabled(false);
 
+		drive_setLeft.SetInverted(true);
+
+		string gameData = DriverStation::GetInstance().GetGameSpecificMessage();
+
+//The block below is for assigning priorities to a numerical value...
+		int priorityInt;
+		if(prioritizeSelected == DoSwitch){
+			priorityInt = 0;
+		}
+		else if(prioritizeSelected == DoScale){
+			priorityInt = 1;
+		}
+		else if(prioritizeSelected == CrossLineOnly){
+			priorityInt = 2;
+		}
+//END BLOCK
+
+//The block below is for assigning game data entries to a numerical value...
+		//Switch
+		int switchSideInt;
+		if(gameData[0] == 'L'){
+			switchSideInt = 0;
+		}
+		else if(gameData[0] == 'R'){
+			switchSideInt = 1;
+		}
+
+		//Scale
+		int scaleSideInt;
+		if(gameData[1] == 'L'){
+			scaleSideInt = 0;
+		}
+		else if(gameData[1] == 'R'){
+			scaleSideInt = 1;
+		}
+//END BLOCK
+
 		if (autoSelected == autoOnCenter) {
 			// Custom Auto goes here
 			cout << "Running Center Auton..." << endl;
 
-			drive_setLeft.SetInverted(true);
-
-			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
-
-			switch(gameData[0]) {
-
-				case "R" :
-					//In front of the center station and going to right side of switch.
+			switch (switchSideInt){
+			case 0/*Left*/:
+				//In front of the center station and going to left side of switch.
 				break;
-
-				case "L" :
-					//In front of the center station and going to left side of switch.
+			case 1/*Right*/:
+				//In front of the center station and going to right side of switch.
 				break;
-
-				default :
-					cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
-					while(gyro.GetAngle() != 45 || gyro.GetAngle() != -45) {
-						RobotDrive.TankDrive(-0.5,0.5);
+			default/*NO CODE ERROR*/:
+				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
+				while (gyro.GetAngle() != 45 || gyro.GetAngle() != -45) {
+					RobotDrive.TankDrive(-0.5, 0.5);
 				}
+				break;
 			}
+
+
 		}
 		else if (autoSelected == autoOnRight) {
 			cout << "Running Right Auton..." << endl;
@@ -109,15 +146,13 @@ public:
 			gyro.Reset();
 			gyro.Calibrate();
 
-			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
+			switch(priorityInt) {
 
-			switch(Prioritize) {
-
-			case DoScale :
-				switch(gameData[1]) {
-				case "L" :
-					switch(gameData[0]) {
-					case "R" :
+			case 1 :
+				switch(scaleSideInt) {
+				case 0 :
+					switch(switchSideInt) {
+					case 1 :
 						//Do switch
 						break;
 					default :
@@ -125,17 +160,17 @@ public:
 						break;
 					}
 					break;
-				case "R" :
+				case 1 :
 					//Do scale
 					break;
 				}
 				break;
 
-			case DoSwitch :
-				switch(gameData[0]) {
-				case "L" :
-					switch(gameData[1]) {
-					case "R" :
+			case 0 :
+				switch(switchSideInt) {
+				case 0 :
+					switch(scaleSideInt) {
+					case 1 :
 						//Do scale
 						break;
 					default :
@@ -144,88 +179,80 @@ public:
 					}
 					break;
 
-				case "R" :
+				case 1 :
 					//Do switch
 					break;
-
 				}
 				break;
 
-			case CrossLineOnly :
+			case 2 :
 				//Crossing line.
 				break;
 			}
 
-		} else if (autoSelected == autoOnLeft) {
+		}
+		else if (autoSelected == autoOnLeft) {
 			cout << "Running Left Auton..." << endl;
 
 			gyro.Reset();
 			gyro.Calibrate();
 
-			gameData = DriverStation::GetInstance().GetGameSpecificMessage();
+			switch(priorityInt){
 
-			switch(Prioritize){
-			case DoScale :
-				switch(gameData[1]){
-				case "L" :
+			case 1 :
+				switch(scaleSideInt){
+				case 0 :
 					//Do scale
 					break;
-				case "R" :
-					switch(gameData[0]){
-					case "L" :
+				case 1 :
+					switch(switchSideInt){
+					case 0 :
 						//Do switch
 						break;
-					case "R" :
+					default :
 						//Cross line
 						break;
 					}
 					break;
 				}
 				break;
-			case DoSwitch :
-				switch(gameData[0]){
-				case "L" :
-					//Do switch
-					break;
-				case "R" :
-				switch(gameData[1]){
-				case "L" :
-					//Do scale
-					break;
-				case "R" :
-					//Cross line
-					break;
-				}
-					break;
-				default :
-					//Cross line
+			case 0 :
+				switch(switchSideInt){
+				case 0 :
+						//Do switch
+						break;
+				case 1 :
+					switch(scaleSideInt){
+					case 0 :
+						//Do scale
+						break;
+					default :
+						//Cross line
+						break;
+						}
 					break;
 				}
 				break;
-			case CrossLineOnly :
+			case 2 :
 				//Cross line
 				break;
-			default :
-				cout << "No code given, crossing line..." << endl;
-				//Cross line
 			}
-
-			} else if (autoSelected == autoIdle) {
-				cout << "Doing Nothing in Auton..." << endl;
-
-				gyro.Reset();
-				gyro.Calibrate();
+		}
+		else if (autoSelected == autoIdle) {
+			cout << "Doing Nothing in Auton..." << endl;
+			gyro.Reset();
+			gyro.Calibrate();
 
 		}
 	}
 
 	/*
-	 * Runs the motors with arcade steering.
+	 * Runs the motors with tank steering.
 	 */
 	void OperatorControl() override {
 		RobotDrive.SetSafetyEnabled(true);
 		while (IsOperatorControl() && IsEnabled()) {
-			// Drive with arcade style (use right stick)
+			// Drive with arcade style
 			drive_setLeft.SetInverted(true);
 
 			RobotDrive.TankDrive(stickDriveL.GetY(), stickDriveR.GetY());
@@ -233,19 +260,19 @@ public:
 			clawY.Set(stickAux.GetY());
 
 			if (stickAux.GetRawButton(1)) {
-				drive_setLeft.Set(1);
-				drive_setRight.Set(-1);
+				clawL.Set(1);
+				clawR.Set(-1);
 			} else {
-				drive_setLeft.Set(0);
-				drive_setRight.Set(0);
+				clawL.Set(0);
+				clawR.Set(0);
 			}
 
 			if (stickAux.GetRawButton(2)) {
-				drive_setLeft.Set(-1);
-				drive_setRight.Set(1);
+				clawL.Set(-1);
+				clawR.Set(1);
 			} else {
-				drive_setLeft.Set(0);
-				drive_setRight.Set(0);
+				clawL.Set(0);
+				clawR.Set(0);
 			}
 
 			if (stickAux.GetRawButton(12)) {
@@ -307,9 +334,11 @@ private:
 	const string DoSwitch = "Switch";
 	const string CrossLineOnly = "Cross Line Only";
 
+	/*Commented this code out for debugging....
+	  VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 	SendableChooser<string> Cube;
 	const string GetCube = "Get a Power Cube";
-	const string LeaveCube = "Do not get a Power Cube";
+	const string LeaveCube = "Do not get a Power Cube";*/
 
 	SendableChooser<string> m_chooser;
 	const string autoIdle = "DoNothing";
