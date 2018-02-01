@@ -337,7 +337,7 @@ private:
 	/*Commented this code out for debugging....
 	  VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
 	SendableChooser<string> Cube;
-	const string GetCube = "Get a Power Cube";
+	const string GetCube = "Get a Power Cube";		a
 	const string LeaveCube = "Do not get a Power Cube";*/
 
 	SendableChooser<string> m_chooser;
