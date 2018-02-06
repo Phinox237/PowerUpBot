@@ -35,6 +35,7 @@ using namespace frc;
  */
 class Robot : public SampleRobot {
 public:
+
 	Robot() {
 		// Note SmartDashboard is not initialized here, wait until
 		// RobotInit to make SmartDashboard calls
@@ -42,15 +43,20 @@ public:
 	}
 
 	void RobotInit() {
-		m_chooser.AddDefault(autoOnLeft, autoOnLeft);
-		m_chooser.AddObject(autoOnRight, autoOnRight);
-		m_chooser.AddObject(autoOnCenter, autoOnCenter);
-		m_chooser.AddObject(autoIdle, autoIdle);
-		Prioritize.AddDefault(DoSwitch, DoSwitch);
-		Prioritize.AddObject(DoScale, DoScale);
-		Prioritize.AddObject(CrossLineOnly, CrossLineOnly);
+		c_Mode.AddDefault(autoOnLeft, autoOnLeft);
+		c_Mode.AddObject(autoOnRight, autoOnRight);
+		c_Mode.AddObject(autoOnCenter, autoOnCenter);
+		c_Mode.AddObject(autoIdle, autoIdle);
+		c_Prioritize.AddDefault(DoSwitch, DoSwitch);
+		c_Prioritize.AddObject(DoScale, DoScale);
+		c_Prioritize.AddObject(CrossLineOnly, CrossLineOnly);
+		c_Cube.AddDefault(NoCube, NoCube);
+		c_Cube.AddObject(GetCube, GetCube);
+		c_Cube.AddObject(LeaveCube, LeaveCube);
 
-		SmartDashboard::PutData("Auto Modes", &m_chooser);
+		SmartDashboard::PutData("Auto Modes", &c_Mode);
+		SmartDashboard::PutData("Priority", &c_Prioritize);
+		SmartDashboard::PutData("Cube Option", &c_Cube);
 
 	}
 
@@ -69,10 +75,10 @@ public:
 	 */
 	void Autonomous() {
 
-		string prioritizeSelected = Prioritize.GetSelected();
-		cout << "Prioritize: " << prioritizeSelected << endl;
+		string prioritizeSelected = c_Prioritize.GetSelected();
+		cout << "c_Prioritize: " << prioritizeSelected << endl;
 
-		string autoSelected = m_chooser.GetSelected();
+		string autoSelected = c_Mode.GetSelected();
 		// string autoSelected = SmartDashboard::GetString(
 		// "Auto Selector", kAutoNameDefault);
 		cout << "Auto selected: " << autoSelected << endl;
@@ -82,12 +88,13 @@ public:
 		// this autonomous mode.
 		RobotDrive.SetSafetyEnabled(false);
 
-		drive_setLeft.SetInverted(true);
+		d_setLeft.SetInverted(true);
 
 		string gameData = DriverStation::GetInstance().GetGameSpecificMessage();
 
 //The block below is for assigning priorities to a numerical value...
 		int priorityInt;
+
 		if(prioritizeSelected == DoSwitch){
 			priorityInt = 0;
 		}
@@ -253,7 +260,7 @@ public:
 		RobotDrive.SetSafetyEnabled(true);
 		while (IsOperatorControl() && IsEnabled()) {
 			// Drive with arcade style
-			drive_setLeft.SetInverted(true);
+			d_setLeft.SetInverted(true);
 
 			RobotDrive.TankDrive(stickDriveL.GetY(), stickDriveR.GetY());
 
@@ -304,14 +311,14 @@ private:
 	//Left Drive
 	Spark driveFL{0};
 	Spark driveRL{1};
-	SpeedControllerGroup drive_setLeft{driveRL, driveFL};
+	SpeedControllerGroup d_setLeft{driveRL, driveFL};
 
 	//Right Drive
 	Spark driveFR{2};
 	Spark driveRR{3};
-	SpeedControllerGroup drive_setRight{driveRR, driveRL};
+	SpeedControllerGroup d_setRight{driveRR, driveRL};
 
-	DifferentialDrive RobotDrive{drive_setLeft, drive_setRight};
+	DifferentialDrive RobotDrive{d_setLeft, d_setRight};
 
 	//Claw motors
 	Talon clawL{4};
@@ -329,18 +336,19 @@ private:
 	ADXRS450_Gyro gyro{0};
 
 	//Auton stuff
-	SendableChooser<string> Prioritize;
+	SendableChooser<string> c_Prioritize;
 	const string DoScale = "Scale";
 	const string DoSwitch = "Switch";
 	const string CrossLineOnly = "Cross Line Only";
 
-	/*Commented this code out for debugging....
-	  VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-	SendableChooser<string> Cube;
-	const string GetCube = "Get a Power Cube";		a
-	const string LeaveCube = "Do not get a Power Cube";*/
+	//Commented this code out for debugging....
+	//VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+	SendableChooser<string> c_Cube;
+	const string GetCube = "Get an additional Power Cube";
+	const string LeaveCube = "Don't get an additional Power Cube";
+	const string NoCube = "Does Not Apply";
 
-	SendableChooser<string> m_chooser;
+	SendableChooser<string> c_Mode;
 	const string autoIdle = "DoNothing";
 	const string autoOnLeft = "StartInLeft";
 	const string autoOnRight = "StartInRight";
