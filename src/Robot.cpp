@@ -18,6 +18,9 @@
 #include <Talon.h>
 #include <Timer.h>
 #include <ADXRS450_Gyro.h>
+#include <SPI.h>
+#include <DigitalInput.h>
+
 using namespace std;
 using namespace frc;
 
@@ -43,6 +46,7 @@ public:
 	}
 
 	void RobotInit() {
+
 		c_Mode.AddDefault(autoOnLeft, autoOnLeft);
 		c_Mode.AddObject(autoOnRight, autoOnRight);
 		c_Mode.AddObject(autoOnCenter, autoOnCenter);
@@ -50,13 +54,14 @@ public:
 		c_Prioritize.AddDefault(DoSwitch, DoSwitch);
 		c_Prioritize.AddObject(DoScale, DoScale);
 		c_Prioritize.AddObject(CrossLineOnly, CrossLineOnly);
-		c_Cube.AddDefault(NoCube, NoCube);
-		c_Cube.AddObject(GetCube, GetCube);
-		c_Cube.AddObject(LeaveCube, LeaveCube);
 
 		SmartDashboard::PutData("Auto Modes", &c_Mode);
 		SmartDashboard::PutData("Priority", &c_Prioritize);
-		SmartDashboard::PutData("Cube Option", &c_Cube);
+
+		gyro.Calibrate();
+		d_setLeft.SetInverted(true);
+		clawY.SetInverted(true);
+		mClimb.SetInverted(true);
 
 	}
 
@@ -73,22 +78,28 @@ public:
 	 * SendableChooser make sure to add them to the chooser code above as
 	 * well.
 	 */
+
+	void DropClaw() {
+		RobotDrive.ArcadeDrive(1,0);
+		RobotDrive.ArcadeDrive(0,0);
+
+	}
+
 	void Autonomous() {
 
-		string prioritizeSelected = c_Prioritize.GetSelected();
-		cout << "c_Prioritize: " << prioritizeSelected << endl;
 
 		string autoSelected = c_Mode.GetSelected();
 		// string autoSelected = SmartDashboard::GetString(
 		// "Auto Selector", kAutoNameDefault);
 		cout << "Auto selected: " << autoSelected << endl;
 
+		string prioritizeSelected = c_Prioritize.GetSelected();
+		cout << "Prioritize: " << prioritizeSelected << endl;
+
 		// MotorSafety improves safety when motors are updated in loops
 		// but is disabled here because motor updates are not looped in
 		// this autonomous mode.
 		RobotDrive.SetSafetyEnabled(false);
-
-		d_setLeft.SetInverted(true);
 
 		string gameData = DriverStation::GetInstance().GetGameSpecificMessage();
 
@@ -151,34 +162,52 @@ public:
 			cout << "Running Right Auton..." << endl;
 
 			gyro.Reset();
-			gyro.Calibrate();
 
 			switch(priorityInt) {
 
 			case 1 :
+				//Prioritize scale
 				switch(scaleSideInt) {
 				case 0 :
+					//Scale is on left, checking switch...
 					switch(switchSideInt) {
 					case 1 :
 						//Do switch
+						DropClaw();
+						RobotDrive.ArcadeDrive(-1, -gyro.GetAngle()*0.003);
+						Wait(0.8);
+						do {
+						RobotDrive.ArcadeDrive(0, -0.33);
+						}
+						while (gyro.GetAngle() < 85);
+
+						RobotDrive.ArcadeDrive(0.5, -gyro.GetAngle()*0.003);
+						Wait(0.3);
+						clawY.Set(0.75);
 						break;
 					default :
 						//Cross line
+						RobotDrive.ArcadeDrive(1, -gyro.GetAngle()*0.003);
 						break;
 					}
 					break;
 				case 1 :
-					//Do scale
+					//Scale is on right, doing scale...
+
+
+
 					break;
 				}
 				break;
 
 			case 0 :
+				//Prioritize switch
 				switch(switchSideInt) {
 				case 0 :
+					//Switch is on left, checking scale...
 					switch(scaleSideInt) {
 					case 1 :
-						//Do scale
+						//Scale is on right, doing scale
 						break;
 					default :
 						//Cross line
@@ -202,7 +231,6 @@ public:
 			cout << "Running Left Auton..." << endl;
 
 			gyro.Reset();
-			gyro.Calibrate();
 
 			switch(priorityInt){
 
@@ -248,7 +276,6 @@ public:
 		else if (autoSelected == autoIdle) {
 			cout << "Doing Nothing in Auton..." << endl;
 			gyro.Reset();
-			gyro.Calibrate();
 
 		}
 	}
@@ -259,37 +286,48 @@ public:
 	void OperatorControl() override {
 		RobotDrive.SetSafetyEnabled(true);
 		while (IsOperatorControl() && IsEnabled()) {
-			// Drive with arcade style
-			d_setLeft.SetInverted(true);
 
-			RobotDrive.TankDrive(stickDriveL.GetY(), stickDriveR.GetY());
+			cout << stickAux.GetTop() << endl;
 
-			clawY.Set(stickAux.GetY());
+			// Drive
+			RobotDrive.TankDrive(-stickDriveL.GetY()*0.75, -stickDriveR.GetY()*0.73);
 
-			if (stickAux.GetRawButton(1)) {
+			// Claw up/down
+			if (stickAux.GetRawButton(3)) {
+				clawY.Set(0.7);
+			} else if (stickAux.GetRawButton(4)) {
+				clawY.Set(-0.7);
+			} else {
+				clawY.Set(0);
+			}
+
+			//Cube-related code
+			if (stickAux.GetRawButton(2)) {
 				clawL.Set(1);
 				clawR.Set(-1);
+
+			} else if (stickAux.GetRawButton(1)) {
+				clawL.Set(-0.8);
+				clawR.Set(0.8);
+
+			} else if (stickAux.GetY() > 0.2 || stickAux.GetY() < -0.2) {
+				clawL.Set(stickAux.GetY()*0.25);
+				clawR.Set(-stickAux.GetY()*0.25);
+
+			} else if (stickAux.GetZ() > 0.2 || stickAux.GetZ() < -0.2){
+				clawL.Set(stickAux.GetZ()*0.25);
+				clawR.Set(stickAux.GetZ()*0.25);
+
 			} else {
 				clawL.Set(0);
 				clawR.Set(0);
 			}
 
-			if (stickAux.GetRawButton(2)) {
-				clawL.Set(-1);
-				clawR.Set(1);
-			} else {
-				clawL.Set(0);
-				clawR.Set(0);
-			}
-
-			if (stickAux.GetRawButton(12)) {
-				mClimb.Set(1);
-			} else {
-				mClimb.Set(0);
-			}
-
+			//Climber
 			if (stickAux.GetRawButton(11)) {
-				mClimb.Set(-1);
+				mClimb.Set(0.8);
+			} else if (stickAux.GetRawButton(12)) {
+				mClimb.Set(-0.8);
 			} else {
 				mClimb.Set(0);
 			}
@@ -316,37 +354,37 @@ private:
 	//Right Drive
 	Spark driveFR{2};
 	Spark driveRR{3};
-	SpeedControllerGroup d_setRight{driveRR, driveRL};
+	SpeedControllerGroup d_setRight{driveRR, driveFR};
 
 	DifferentialDrive RobotDrive{d_setLeft, d_setRight};
 
 	//Claw motors
-	Talon clawL{4};
-	Talon clawR{5};
-	Talon clawY{6};
+	Victor clawL{4};
+	Victor clawR{5};
+	Spark clawY{6};
 
 	//Climing
-	Talon mClimb{7};
+	Spark mClimb{7};
 
 	//Joysticks
 	Joystick stickDriveL{0};
 	Joystick stickDriveR{1};
 	Joystick stickAux{2};
 
-	ADXRS450_Gyro gyro{0};
+	//Gyro
+	ADXRS450_Gyro gyro{SPI::Port::kOnboardCS0};
+
+	//Limit Switches
+	DigitalInput limit0{0};
+	DigitalInput limit1{1};
+	DigitalInput limit2{2};
+	DigitalInput limit3{3};
 
 	//Auton stuff
 	SendableChooser<string> c_Prioritize;
 	const string DoScale = "Scale";
 	const string DoSwitch = "Switch";
 	const string CrossLineOnly = "Cross Line Only";
-
-	//Commented this code out for debugging....
-	//VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-	SendableChooser<string> c_Cube;
-	const string GetCube = "Get an additional Power Cube";
-	const string LeaveCube = "Don't get an additional Power Cube";
-	const string NoCube = "Does Not Apply";
 
 	SendableChooser<string> c_Mode;
 	const string autoIdle = "DoNothing";
