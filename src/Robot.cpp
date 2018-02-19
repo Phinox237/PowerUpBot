@@ -43,6 +43,7 @@ public:
 		// Note SmartDashboard is not initialized here, wait until
 		// RobotInit to make SmartDashboard calls
 		RobotDrive.SetExpiration(0.1);
+		cout << gyro.GetAngle() << endl;
 	}
 
 	void RobotInit() {
@@ -59,9 +60,8 @@ public:
 		SmartDashboard::PutData("Priority", &c_Prioritize);
 
 		gyro.Calibrate();
+		gyro.Reset();
 		d_setLeft.SetInverted(true);
-		clawY.SetInverted(true);
-		mClimb.SetInverted(true);
 
 	}
 
@@ -81,7 +81,21 @@ public:
 
 	void DropClaw() {
 		RobotDrive.ArcadeDrive(1,0);
+		Wait(0.25);
 		RobotDrive.ArcadeDrive(0,0);
+		Wait(0.25);
+		RobotDrive.ArcadeDrive(-1,0);
+		Wait(0.25);
+		RobotDrive.ArcadeDrive(0,0);
+
+	}
+
+	void ShootBall() {
+		clawL.Set(-1);
+		clawR.Set(1);
+		Wait(0.3);
+		clawL.Set(0);
+		clawR.Set(0);
 
 	}
 
@@ -147,12 +161,21 @@ public:
 				break;
 			case 1/*Right*/:
 				//In front of the center station and going to right side of switch.
+				DropClaw();
+				RobotDrive.ArcadeDrive(0.5,0);
+				Wait(0.5);
+				do{
+					RobotDrive.ArcadeDrive(0,0.5);
+				}while(gyro.GetAngle() < 45);
+				do{
+				RobotDrive.ArcadeDrive(0.5,-0.25);
+				}while(gyro.GetAngle() > 0);
+
 				break;
 			default/*NO CODE ERROR*/:
 				cout << "NO CODE GIVEN... DRIVING PAST AUTO LINE" << endl;
-				while (gyro.GetAngle() != 45 || gyro.GetAngle() != -45) {
-					RobotDrive.TankDrive(-0.5, 0.5);
-				}
+
+
 				break;
 			}
 
@@ -184,9 +207,12 @@ public:
 						RobotDrive.ArcadeDrive(0.5, -gyro.GetAngle()*0.003);
 						Wait(0.3);
 						clawY.Set(0.75);
+						Wait(0.3);
+						ShootBall();
 						break;
 					default :
 						//Cross line
+						DropClaw();
 						RobotDrive.ArcadeDrive(1, -gyro.GetAngle()*0.003);
 						break;
 					}
@@ -287,10 +313,8 @@ public:
 		RobotDrive.SetSafetyEnabled(true);
 		while (IsOperatorControl() && IsEnabled()) {
 
-			cout << stickAux.GetTop() << endl;
-
 			// Drive
-			RobotDrive.TankDrive(-stickDriveL.GetY()*0.75, -stickDriveR.GetY()*0.73);
+			RobotDrive.TankDrive(stickDriveL.GetY(), -stickDriveR.GetY());
 
 			// Claw up/down
 			if (stickAux.GetRawButton(3)) {
